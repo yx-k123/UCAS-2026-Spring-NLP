@@ -30,6 +30,8 @@ SCRAPY_CMD="/home/kouyx/NLP/venv/bin/scrapy"
 # 输出文件名
 OUTPUT_FILE="/home/kouyx/NLP/pj1/data/${SPIDER}_data_${COUNT}.json"
 
+rm -f "$OUTPUT_FILE"  # 删除旧的输出文件（如果存在）
+
 # 进入项目目录并执行爬虫
 cd "$PROJECT_DIR" || { echo "无法进入目录 $PROJECT_DIR"; exit 1; }
 
