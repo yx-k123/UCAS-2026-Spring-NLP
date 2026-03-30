@@ -42,3 +42,11 @@ class BBCSpider(scrapy.Spider):
                 'content': content,
                 'language': 'en'
             }
+
+        # 为了防止数据不够，继续从当前文章页提取可能的新闻链接（递归爬取）
+        links = response.css('a::attr(href)').getall()
+        for link in links:
+            if link.startswith('/'):
+                link = 'https://www.bbc.com' + link
+            if '/news/' in link and any(char.isdigit() for char in link):
+                yield response.follow(link, callback=self.parse_article)

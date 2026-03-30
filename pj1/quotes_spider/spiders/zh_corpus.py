@@ -25,3 +25,9 @@ class SinaSpider(scrapy.Spider):
                 'content': content.strip(),
                 'language': 'zh'
             }
+
+        # 同样进行递归爬取，防止数据量不足
+        links = response.css('a::attr(href)').getall()
+        for link in links:
+            if 'news.sina.com.cn' in link and link.endswith('.shtml'):
+                yield response.follow(link, callback=self.parse_article)

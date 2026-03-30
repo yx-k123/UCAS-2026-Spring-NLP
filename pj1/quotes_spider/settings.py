@@ -22,10 +22,11 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 ROBOTSTXT_OBEY = False
 
 # Concurrency and throttling settings
-#CONCURRENT_REQUESTS = 16
-CONCURRENT_REQUESTS_PER_DOMAIN = 1
-DOWNLOAD_DELAY = 1.5
-RANDOMIZE_DOWNLOAD_DELAY = True
+CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS_PER_DOMAIN = 16
+# 将 DOWNLOAD_DELAY 设为 0（或完全注释掉）可大幅加速。如果被封IP，可以酌情改回 0.5 左右。
+DOWNLOAD_DELAY = 0.5
+RANDOMIZE_DOWNLOAD_DELAY = False
 
 # Disable cookies (enabled by default)
 COOKIES_ENABLED = False
