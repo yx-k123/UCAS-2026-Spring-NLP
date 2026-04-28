@@ -50,14 +50,27 @@ def topk_tgt(src_vec: torch.Tensor, tgt_emb: torch.Tensor, k: int) -> List[int]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--src_vocab", required=True)
-    parser.add_argument("--src_emb", required=True)
-    parser.add_argument("--tgt_vocab", required=True)
-    parser.add_argument("--tgt_emb", required=True)
-    parser.add_argument("--lexicon", required=True, help="bilingual seed lexicon: src\\ttgt")
+    parser.add_argument("--config", default="")
+    parser.add_argument("--src_vocab", default="")
+    parser.add_argument("--src_emb", default="")
+    parser.add_argument("--tgt_vocab", default="")
+    parser.add_argument("--tgt_emb", default="")
+    parser.add_argument("--lexicon", default="", help="bilingual seed lexicon: src\\ttgt")
     parser.add_argument("--topk", type=int, default=10)
     parser.add_argument("--report_out", default="result/bilingual_alignment_report.txt")
     args = parser.parse_args()
+
+    if args.config:
+        with open(args.config, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+        for key, value in cfg.items():
+            if hasattr(args, key):
+                setattr(args, key, value)
+
+    required = ["src_vocab", "src_emb", "tgt_vocab", "tgt_emb", "lexicon"]
+    missing = [name for name in required if not getattr(args, name)]
+    if missing:
+        raise ValueError(f"Missing required arguments: {', '.join(missing)}")
 
     src_itos, src_stoi = load_vocab(args.src_vocab)
     tgt_itos, tgt_stoi = load_vocab(args.tgt_vocab)
