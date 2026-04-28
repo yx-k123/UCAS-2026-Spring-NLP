@@ -8,6 +8,7 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
 from pfr_utils import build_vocab, encode_tokens, load_tokens_from_file, load_vocab
+from train_utils import TrainLogger, set_seed
 
 
 class LMDataset(Dataset):
@@ -27,15 +28,32 @@ class LMDataset(Dataset):
 
 
 class RnnLM(nn.Module):
-    def __init__(self, vocab_size: int, embed_dim: int, hidden_size: int) -> None:
+    def __init__(
+        self,
+        vocab_size: int,
+        embed_dim: int,
+        hidden_size: int,
+        num_layers: int,
+        dropout: float,
+    ) -> None:
         super().__init__()
         self.embed = nn.Embedding(vocab_size, embed_dim)
-        self.rnn = nn.RNN(embed_dim, hidden_size, batch_first=True)
+        self.emb_dropout = nn.Dropout(dropout)
+        self.rnn = nn.RNN(
+            embed_dim,
+            hidden_size,
+            num_layers=num_layers,
+            dropout=dropout if num_layers > 1 else 0.0,
+            batch_first=True,
+        )
+        self.out_dropout = nn.Dropout(dropout)
         self.fc = nn.Linear(hidden_size, vocab_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         emb = self.embed(x)
+        emb = self.emb_dropout(emb)
         out, _ = self.rnn(emb)
+        out = self.out_dropout(out)
         return self.fc(out)
 
 
@@ -47,10 +65,15 @@ def main() -> None:
     parser.add_argument("--vocab_size", type=int, default=1000)
     parser.add_argument("--embed_dim", type=int, default=10)
     parser.add_argument("--hidden_size", type=int, default=32)
+    parser.add_argument("--num_layers", type=int, default=1)
     parser.add_argument("--seq_len", type=int, default=20)
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--grad_clip", type=float, default=1.0)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--run_name", default="")
     parser.add_argument("--result_dir", default="result")
     args = parser.parse_args()
 
@@ -60,6 +83,8 @@ def main() -> None:
         for key, value in cfg.items():
             if hasattr(args, key):
                 setattr(args, key, value)
+
+    set_seed(args.seed)
 
     tokens = load_tokens_from_file(args.tokens)
     if os.path.exists(args.vocab_path):
@@ -73,9 +98,21 @@ def main() -> None:
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = RnnLM(len(itos), args.embed_dim, args.hidden_size).to(device)
+    model = RnnLM(
+        len(itos),
+        args.embed_dim,
+        args.hidden_size,
+        args.num_layers,
+        args.dropout,
+    ).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     criterion = nn.CrossEntropyLoss()
+    logger = TrainLogger(
+        result_dir=args.result_dir,
+        model_name="rnn",
+        run_name=args.run_name,
+        config=vars(args),
+    )
 
     model.train()
     for epoch in range(args.epochs):
@@ -87,14 +124,18 @@ def main() -> None:
             loss = criterion(logits.view(-1, logits.size(-1)), y.view(-1))
             optimizer.zero_grad()
             loss.backward()
+            if args.grad_clip and args.grad_clip > 0:
+                nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
             optimizer.step()
             total_loss += loss.item()
         avg_loss = total_loss / max(len(loader), 1)
-        print(f"epoch {epoch + 1}/{args.epochs} loss={avg_loss:.4f}")
+        lr = optimizer.param_groups[0]["lr"]
+        logger.log_epoch(epoch=epoch + 1, epochs=args.epochs, loss=avg_loss, lr=lr)
 
     os.makedirs(args.result_dir, exist_ok=True)
     out_path = os.path.join(args.result_dir, "rnn_embeddings.pt")
     torch.save({"embedding": model.embed.weight.detach().cpu()}, out_path)
+    logger.save_summary(extra={"embedding_path": out_path, "vocab_size": len(itos)})
 
     print(f"saved: {out_path}")
 
