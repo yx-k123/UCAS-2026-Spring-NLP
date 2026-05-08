@@ -33,8 +33,6 @@ pj2/
 cd /home/kouyx/NLP/pj2
 ```
 
-依赖以 `torch` 为主。如果你的环境中尚未安装，请先安装对应版本的 PyTorch。
-
 当前提供的核心配置文件：
 - `configs/prepare_zh.json`、`configs/prepare_en.json`
 - `configs/fnn_zh.json`、`configs/rnn_zh.json`、`configs/lstm_zh.json`
@@ -129,16 +127,7 @@ python align_bilingual.py --config configs/align_zh_en.json
 - 锚点词对的 `cosine` 和 `l2` 距离；
 - 对齐后每个中文锚点词在英文空间的 Top-K 邻居。
 
-## 7. 实验报告建议写法
-
-建议按以下结构整理：
-1. 数据来源与规模（中文、英文 token 数与词表大小）。  
-2. 模型设置（FNN/RNN/LSTM 参数统一和差异）。  
-3. 同一词集合的近邻对比（可展示 20 个词）。  
-4. 人工判断一致性分析（语义相近、词性偏差、高频词干扰）。  
-5. 中英对齐后同义词距离分析（如“书-book”“工作-work/job”）。
-
-## 8. 常见问题
+## 7. 常见问题
 
 1. 三种模型相似词差异很大是否正常？  
 正常。因为 FNN 与 RNN/LSTM 的训练目标不同，向量空间不完全一致是预期现象。

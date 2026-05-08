@@ -1,0 +1,288 @@
+% 这是中国科学院大学计算机科学与技术专业《计算机组成原理（研讨课）》使用的实验报告 Latex 模板
+% 本模板与 2024 年 2 月 Jun-xiong Ji 完成, 更改自由 Shing-Ho Lin 和 Jun-Xiong Ji 于 2022 年 9 月共同完成的基础物理实验模板
+% 如有任何问题, 请联系: jijunxoing21@mails.ucas.ac.cn
+% This is the LaTeX template for report of Experiment of Computer Organization and Design courses, based on its provided Word template. 
+% This template is completed on Febrary 2024, based on the joint collabration of Shing-Ho Lin and Junxiong Ji in September 2022. 
+% Adding numerous pictures and equations leads to unsatisfying experience in Word. Therefore LaTeX is better. 
+% Feel free to contact me via: jijunxoing21@mails.ucas.ac.cn
+
+\documentclass[11pt]{article}
+
+\usepackage[a4paper]{geometry}
+\geometry{left=2.0cm,right=2.0cm,top=2.5cm,bottom=2.5cm}
+
+\usepackage{ctex} % 支持中文的LaTeX宏包
+\usepackage{amsmath,amsfonts,graphicx,subfigure,amssymb,bm,amsthm,mathrsfs,mathtools,breqn} % 数学公式和符号的宏包集合
+\usepackage{algorithm,algorithmicx} % 算法和伪代码
+\usepackage[noend]{algpseudocode} % 算法和伪代码
+\usepackage{fancyhdr} % 自定义页眉页脚
+\usepackage[framemethod=TikZ]{mdframed} % 创建带边框的框架
+\usepackage{fontspec} % 字体设置
+\usepackage{adjustbox} % 调整盒子大小
+\usepackage{fontsize} % 设置字体大小
+\usepackage{tikz,xcolor} % 绘制图形和使用颜色
+\usepackage{multicol} % 多栏排版
+\usepackage{multirow} % 表格中合并单元格
+\usepackage{pdfpages} % 插入PDF文件
+\usepackage{listings} % 在文档中插入源代码
+\usepackage{wrapfig} % 文字绕排图片
+\usepackage{bigstrut,multirow,rotating} % 支持在表格中使用特殊命令
+\usepackage{booktabs} % 创建美观的表格
+\usepackage{circuitikz} % 绘制电路图
+\usepackage{zhnumber} % 中文序号（用于标题）
+\usepackage{tabularx} % 表格折行
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{
+  frame=tb,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  framerule=1pt,
+  rulecolor=\color{gray!35},
+  backgroundcolor=\color{gray!5},
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3,
+}
+
+% 超链接支持 (一定要在大多数包之后, cleveref 之前)
+% colorlinks=true 使链接文字着色而不是加方框; hidelinks 可去掉颜色
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=magenta]{hyperref}
+
+% 轻松引用, 可以用\cref{}指令直接引用, 自动加前缀. 需要在 hyperref 之后加载
+% 例: 图片label为fig:1  => \cref{fig:1} -> Figure.1; \ref{fig:1} -> 1 (纯数字)
+\usepackage[capitalize]{cleveref}
+% \crefname{section}{Sec.}{Secs.}
+\Crefname{section}{Section}{Sections}
+\Crefname{table}{Table}{Tables}
+\crefname{table}{Table.}{Tabs.}
+
+% \setmainfont{Palatino Linotype.ttf}
+% \setCJKmainfont{SimHei.ttf}
+% \setCJKsansfont{Songti.ttf}
+% \setCJKmonofont{SimSun.ttf}
+\punctstyle{kaiming}
+% 偏好的几个字体, 可以根据需要自行加入字体ttf文件并调用
+
+\renewcommand{\emph}[1]{\begin{kaishu}#1\end{kaishu}}
+
+% 对 section 等环境的序号使用中文
+\renewcommand \thesection{\zhnum{section}、}
+\renewcommand \thesubsection{\arabic{section}.\arabic{subsection}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%改这里可以修改实验报告表头的信息
+\newcommand{\name}{寇逸欣}
+\newcommand{\studentNum}{2023K8009922004}
+\newcommand{\major}{计算机科学与技术}
+\newcommand{\labNum}{02}
+\newcommand{\labName}{词向量实验报告}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\input{tex_file/head.tex}
+
+\section{实验目的}
+本实验以《人民日报》1998 年 1 月语料与英文新闻语料为基础，训练并比较三类词向量模型（FNN、RNN、LSTM），目标如下：
+\begin{enumerate}
+    \item 获取汉语与英语词语的词向量表示。
+    \item 在同一批词汇上比较不同模型的向量差异。
+    \item 对随机选取的 20 个词汇输出 Top-10 相似词，并人工检验合理性。
+    \item 进行中英对齐，分析同义词的向量距离与可解释性。
+\end{enumerate}
+
+\section{数据与预处理}
+\subsection{数据来源}
+\begin{itemize}
+    \item 中文语料：北京大学标注的《人民日报》1998 年 1 月分词语料（PFR）。
+    \item 英文语料：BBC英文新闻文本（已在实验一中完成清洗与分词）。
+\end{itemize}
+
+\subsection{预处理与词表}
+预处理使用项目脚本 \texttt{prepare\_pfr.py}，将语料转换为 token 序列与词表，输出：
+\begin{itemize}
+    \item 中文：\texttt{data/processed/pfr\_tokens.txt}, \texttt{data/processed/pfr\_vocab.json}
+    \item 英文：\texttt{data/processed/en\_tokens.txt}, \texttt{data/processed/en\_vocab.json}
+\end{itemize}
+词表大小设为 10,000，低频词映射至 \texttt{<UNK>}。
+
+\section{模型与训练设置}
+三种模型均使用统一的训练策略与嵌入维度（100），其主要参数如表~\ref{tab:config}。
+
+\begin{table}[H]
+    \centering
+    \caption{主要训练超参数（中英一致）}
+    \begin{tabular}{lccc}
+        \toprule
+        参数 & FNN & RNN & LSTM\\
+        \midrule
+        词表大小 & 10000 & 10000 & 10000 \\
+        嵌入维度 & 100 & 100 & 100 \\
+        隐层维度 & - & 128 & 128 \\
+        序列长度 & - & 25 & 25 \\
+        批大小 & 256 & 128 & 128/256 \\
+        学习率 & 0.001 & 0.001 & 0.001 \\
+        训练轮数 & 15 & 12 & 12 \\
+        Dropout & 0.1 & 0.1 & 0.1 \\
+        梯度裁剪 & 1.0 & 1.0 & 1.0 \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:config}
+\end{table}
+
+\subsection{实验可复现性与工具细节}
+本实验基于项目目录中的训练与评估脚本完成（\texttt{prepare\_pfr.py}、\texttt{train\_fnn.py}、\texttt{train\_rnn.py}、\texttt{train\_lstm.py}、\texttt{eval\_vectors.py}、\texttt{align\_bilingual.py}），使用 Python 3.12 虚拟环境与 PyTorch 实现训练。为保证复现性，统一设置随机种子为 42，优化器为 Adam，损失函数为交叉熵，训练日志按 \texttt{result\_zh/} 与 \texttt{result\_en/} 输出。FNN 使用 CBOW 窗口大小 4；RNN/LSTM 采用序列长度 25。所有参数均可通过 \texttt{configs/*.json} 复现。
+
+\section{实验结果与分析}
+\subsection{训练损失曲线}
+中文与英文三种模型的损失曲线如图~\ref{fig:loss}。整体上 FNN 收敛更慢、最终损失更高；RNN 与 LSTM 收敛更快且最终损失更低。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{result_report_figs/fig1_training_curves.png}
+    \caption{中文与英文训练损失曲线}
+    \label{fig:loss}
+\end{figure}
+
+\subsection{模型间相似词重叠度}
+对三种模型的 Top-10 近邻集合计算平均重叠率（越高表示向量空间更一致）。结果如表~\ref{tab:overlap}，RNN 与 LSTM 的一致性最高，FNN 与序列模型的差异更大。
+
+\begin{table}[H]
+    \centering
+    \caption{Top-10 近邻平均重叠率}
+    \begin{tabular}{lccc}
+        \toprule
+        语言 & FNN-RNN & FNN-LSTM & RNN-LSTM \\
+        \midrule
+        中文 & 0.050 & 0.055 & 0.115 \\
+        英文 & 0.045 & 0.020 & 0.060 \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:overlap}
+\end{table}
+
+\subsection{评估指标补充（更客观）}
+除人工判断外，本实验采用如下客观指标衡量质量与稳定性：
+\begin{itemize}
+    \item 训练损失曲线（图~\ref{fig:loss}）：衡量收敛速度与稳定性。
+    \item Top-10 近邻重叠率（表~\ref{tab:overlap}）：衡量不同模型词向量空间的一致性。
+    \item 中英对齐后锚点词对余弦相似度统计（图~\ref{fig:align}）：衡量跨语对齐的整体质量。
+\end{itemize}
+
+\subsection{相似词案例对比}
+表~\ref{tab:case} 展示随机抽样词汇在三种模型上的 Top-5 近邻对比。整体观察：
+\begin{itemize}
+    \item RNN/LSTM 更容易给出语义相关或同一主题内的词；
+    \item FNN 对高频词、共现搭配更敏感，语义稳定性相对偏弱；
+    \item 在低频词与专有名词上，三者均有一定噪声。
+\end{itemize}
+
+\subsection{FNN vs RNN/LSTM 可解释差异}
+FNN（CBOW）仅利用固定窗口的无序上下文，倾向捕捉局部共现；RNN/LSTM 通过序列建模引入顺序信息与更长依赖，因此在语义组织上更稳定。以表~\ref{tab:case} 为例，词语“格外”在 RNN/LSTM 的近邻多为程度副词（如“十分/非常/更加”），而 FNN 近邻受局部共现影响，出现更多非同类词；“两翼”在 RNN/LSTM 更偏向宏观语境词汇，而 FNN 更易受新闻语料中的共现搭配影响。
+
+\subsection{低频词与噪声分析}
+词表限制为 10,000，并将低频词统一映射为 \texttt{<UNK>}。新闻体语料包含大量专名与事件词，导致低频词比例较高，近邻结果易受噪声影响。为缓解该问题，本实验使用最小词频与 \texttt{<UNK>} 机制约束词表规模，并在分析中优先关注中高频词汇的相似性。
+
+\begin{table}[H]
+    \centering
+    \caption{随机词汇 Top-5 近邻对比}
+    \small
+    \begin{tabularx}{\textwidth}{p{2.4cm}X X X}
+        \toprule
+        Word & FNN Top-5 & RNN Top-5 & LSTM Top-5 \\
+        \midrule
+        四中全会 & 足球赛, 重大, 精选, 防震, 动物园 & 系统工程, 六中全会, 越共, 历程, 血 & 铸, 聪明, 航线, 举动, 回应 \\
+        两翼 & 烟台, 艾, 歌曲, 特定, 贫穷 & 繁荣, 开阔, 坚定, 有力, 紧缩 & 科教兴国, 中行, 县域, 恐怖, 私营 \\
+        格外 & 前不久, 甜, 11时, 关, 松花江 & 十分, 尤为, 非常, 更加, 最为 & 十分, 非常, 更为, 更加, 极为 \\
+        敬爱 & 以色列, 孟加拉国, 议题, 风格, 刊物 & 去世, 沉思, 为首, 恩来, 来访 & 沉甸甸, 逮捕, 伟大, 平凡, 饱满 \\
+        讲求 & 文艺部, 对准, 扫描, 采用, 例如 & 损害, 保, 绝对, 总行, 规定 & 偏远, 摆, 够, 一味, 把握 \\
+        分化 & 剥削, 整合, 对立, 往往, 治安 & 产业, 多元化, 温柔, 抵制, 事业 & 凝聚力, 矛盾, 处理, 上层建筑, 音 \\
+        绝大多数 & 文明礼貌, 知识分子, 表明, 时候, 发展史 & 会议室, 大多数, 刊出, 防务, 用人 & 普通, 少数, 鲜活, 削弱, 假冒伪劣 \\
+        介绍 & 统计, 报道, 告诉, 快递, 测算 & 评价, 考察, 信心, 汇报, 摘取 & 获悉, 进, 保障, 投标, 目睹 \\
+        票贩子 & 冬训, 忙碌, 演, 显示, 色 & 境地, 欣赏, 聪明, 沉, 大臣 & 弊端, 损坏, 喜欢, 案值, 物价局 \\
+        过程 & 税制, 分量, 实践, 现实, 自然界 & 故障, 生涯, 进程, 贺信, 生产线 & 大潮, 观念, 政策, 心目, 活动 \\
+        罪 & 起诉, 警告, 被害人, 冻结, 审判 & 检察院, 鉴定, 执行, 赃物, 连任 & 暴力, 构筑物, 改正, 起诉, 成员 \\
+        摆 & 搬, 站, 搬进, 悬挂, 整改 & 贴, 落, 棒, 冲, 拥 & 刻, 贴, 落, 搬, 排 \\
+        \bottomrule
+    \end{tabularx}
+    \label{tab:case}
+\end{table}
+
+\subsection{随机 20 词 Top-10 相似词（以 LSTM 为主）}
+结合损失曲线与相似词一致性，本报告选择 LSTM 作为“最佳”向量用于人工评估。附录表~\ref{tab:top10} 列出 20 个随机词的 Top-10 相似词。
+\textbf{人工判断}：多数词的相似词在语义或主题上是合理的（如“脱贫—扶贫/贫困”，“英国—美国/德国/日本”），但也存在一些上下文噪声或词性漂移，主要来自低频词与语料的新闻体风格。
+
+\subsection{中英对齐与同义词距离}
+基于 Procrustes 对齐方法，对齐后锚点词对的余弦相似度分布如图~\ref{fig:align}。统计上：
+\begin{itemize}
+    \item 全量词典平均余弦相似度为 0.757；
+    \item 精简词典平均余弦相似度为 0.841，整体更稳定。
+\end{itemize}
+部分同义词对结果：
+\begin{itemize}
+    \item 书--book：cos=0.744，距离较近，语义一致性较好。
+    \item 工作--work/job：cos=0.640/0.653，存在一定混淆但仍保持语义邻近。
+\end{itemize}
+对齐词典来自配置文件 \texttt{configs/zh\_en\_seed\_lexicon.txt} 与精简版 \texttt{configs/zh\_en\_seed\_lexicon\_compact.txt}。对齐流程为：对中英词向量做行归一化，使用锚点词对构造矩阵 $X$ 与 $Y$，计算 $X^T Y$ 的 SVD，并得到正交映射 $W=UV^T$，最终将中文空间映射到英文空间并进行相似度评估。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{result_report_figs/fig3_alignment_quality.png}
+    \caption{中英对齐相似度分布（全量 vs 精简词典）}
+    \label{fig:align}
+\end{figure}
+
+\section{结论}
+\begin{itemize}
+    \item 三种模型均能学习到可用的词向量，但 FNN 与序列模型的空间差异明显。
+    \item RNN 与 LSTM 的相似词一致性更高，且在语义相关性上表现更稳定。
+    \item 中英对齐后可在同一空间比较词义，相似度统计支持“书--book”等对齐结果。
+\end{itemize}
+
+\section*{附录：随机 20 词的 Top-10 相似词（LSTM）}
+\begin{table}[H]
+    \centering
+    \caption{随机 20 词的 Top-10 相似词（LSTM）}
+    \small
+    \begin{tabularx}{\textwidth}{p{2.6cm}X}
+        \toprule
+        词汇 & Top-10 相似词 \\
+        \midrule
+        摆 & 刻, 贴, 落, 搬, 排, 揽, 力争, 写, 抢, 弄 \\
+        长 & 高, 强, 闹, 滴, 愈, 看不到, 牵, 等候, 提, 摸索 \\
+        绝大多数 & 普通, 少数, 鲜活, 削弱, 假冒伪劣, 大多数, 每个, 鸭, 菜, 抽调 \\
+        分化 & 凝聚力, 矛盾, 处理, 上层建筑, 音, 物体, 巩固, 共享, 星系, 人际关系 \\
+        格外 & 十分, 非常, 更为, 更加, 极为, 阵阵, 卢, 很, 情节, 尤为 \\
+        大厅 & 会议室, 大年初一, 乐曲, 冬天, 侵略, 范围, 孤独, 街, 等候, 斋月 \\
+        首脑 & 非正式, 厅局长, 布鲁塞尔, 外长, 审视, 雅加达, 伊斯兰, 第十二, 桶, 华盛顿 \\
+        两翼 & 科教兴国, 中行, 县域, 恐怖, 私营, 系数, 一满意, 民众, 可喜, 切实可行 \\
+        脱贫 & 扶贫, 承包, 尊老爱幼, 小金库, 好多, 户, 救助, 贫困, 自从, 忘记 \\
+        四中全会 & 铸, 聪明, 航线, 举动, 回应, 流畅, 以此, 济生, 十四大, 贡献率 \\
+        罪 & 暴力, 构筑物, 改正, 起诉, 成员, 美英, 真相, 辞呈, 车, 新居 \\
+        过程 & 大潮, 观念, 政策, 心目, 活动, 竞争, 行政村, 文章, 实践, 信 \\
+        英国 & 约旦, 中国, 国, 挪威, 美国, 瑞典, 澳大利亚, 日本, 德国, 俄罗斯 \\
+        带领 & 全乡, 辉, 黎族, 帮助, 依靠, 前提, 保卫, 全区, 献给, 兴修 \\
+        考验 & 出访, 行列, 摸索, 光彩, 图片, 炎黄子孙, 走过, 代理人, 大篷车, 企盼 \\
+        泰铢 & 比索, 日元, 印尼盾, 美元, 货币, 泰币, 释放, 福塞特, 经受, 外币 \\
+        敬爱 & 沉甸甸, 逮捕, 伟大, 平凡, 饱满, 胸前, 诱人, 庄严, 摄制, 激动 \\
+        讲求 & 偏远, 捧, 够, 一味, 把握, 重, 打下, 享受, ４００万, 金色 \\
+        介绍 & 获悉, 进, 保障, 投标, 目睹, 阐述, 关停, 认为, 着重, 指明 \\
+        票贩子 & 弊端, 损坏, 喜欢, 案值, 物价局, 需要, 乘客, 进城, 缓, 护照 \\
+        \bottomrule
+    \end{tabularx}
+    \label{tab:top10}
+\end{table}
+
+\end{document}
