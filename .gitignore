@@ -4,3 +4,4 @@ result_report_figs/
 test_env.py
 delete_pyc.sh
 *.codex
+.vscode/
